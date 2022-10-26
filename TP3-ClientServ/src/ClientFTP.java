@@ -9,10 +9,14 @@ public class ClientFTP {
 	static BufferedReader userIn;
 	static PrintStream streamOut;
 	
-	
+	static void dispHelp(){
+		System.out.println("LS: List files in server directory.");
+		System.out.println("GET <filename>: Get file specified in argument.");
+		System.out.println("PUT <filename>: Send file specified to server.");
+	}
 	public static void main(String[] args) throws Exception, IOException {
 		
-		if(args.length == 3) { //If port specified, else use default (default port: 8080)
+		if(args.length == 3) { //Check if all arguments are passed
 			try {
 				SERVER_PORT = Integer.parseInt(args[1]);
 			} catch (Exception ex) {
@@ -25,17 +29,37 @@ public class ClientFTP {
 			System.exit(0);
 		}
 		
-		System.out.println(args[0] + args[1] + args[2]);
-		
-		// Port and host obtainedobtained, try to connect
+		CLIENT_DIR = args[2];
+		// Port and host obtained, trying to connect
 		
 		Socket connectionSocket = new Socket(InetAddress.getByName(ADDRESS), SERVER_PORT);
-		streamIn = new BufferedReader (new InputStreamReader(connectionSocket.getInputStream() ));
-		streamOut = new PrintStream(connectionSocket.getOutputStream());
-		userIn = new BufferedReader ( new InputStreamReader(System.in) );
+		PrintWriter pw = new PrintWriter(new OutputStreamWriter(connectionSocket.getOutputStream()));
+		System.out.println("Connected to: " + InetAddress.getByName(ADDRESS) + ":" + SERVER_PORT);
+		System.out.println("Sent working Directory to server.");
+		pw.println(CLIENT_DIR);
+
+		String cmd, rsp;
+		BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
+		BufferedReader buff_srv = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
+
+		do { //Start getting commands from user.
+			System.out.print(">>> ");
+			cmd = bf.readLine();
+			if(cmd.contains("HELP")){
+				dispHelp();
+			} else {
+				pw.println(cmd);
+				pw.flush();
+				rsp = buff_srv.readLine();
+				System.out.println(rsp);
+				System.out.println("\n");
+			}			
+			
+		} while (!cmd.equals("EXIT"));
 		
-		System.out.println("Connected to: " + ADDRESS + ":" + SERVER_PORT);
-		
+		pw.close();
+		bf.close();
+		connectionSocket.close();
 		
 	}
 }
